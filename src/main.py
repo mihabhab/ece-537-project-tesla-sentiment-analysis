@@ -4,6 +4,14 @@ import pandas as pd
 from typing import Callable
 # import knime.scripting.io as knio
 
+# *** PATHS ***
+script_dir=os.path.dirname(__file__)
+data_path = os.path.join(script_dir, '../data/processed/tweets_processed.csv')
+BoW = os.path.join(script_dir, '../data/raw/sentiment.xlsx')
+# ABBREVIATIONS = 
+# STEMWORDS = 
+destination_path = os.path.join(script_dir, '../data/processed/scored_dataset.csv')
+
 # FUNCTION DEFINITION
 def remove_characters(dataframe:pd.DataFrame, column_name:str, characters:list[str])-> pd.DataFrame:
     """
@@ -117,14 +125,6 @@ def two_column_operation(dataframe: pd.DataFrame, column1_name: str, column2_nam
     
     return dataframe
 
-# *** PATHS ***
-script_dir=os.path.dirname(__file__)
-data_path = os.path.join(script_dir, '../data/processed/tweets_processed.csv')
-BoW = os.path.join(script_dir, '../data/raw/sentiment.xlsx')
-# ABBREVIATIONS = 
-# STEMWORDS = 
-destination_path = os.path.join(script_dir, '../data/processed/export.csv')
-
 # *** PANDAS DATAFRAMES ***
 dataset = pd.read_csv(data_path)
 sentiment = pd.read_excel(BoW)
@@ -181,7 +181,7 @@ dataset= two_column_operation(dataframe=dataset,
                                    operation=operation)
 
 print(dataset['Overall Score'])
-
+dataset.to_csv(destination_path, index=False)
 
 # Output the modified dataframe 
 # knio.output_tables[0] = knio.Table.from_pandas(dataset) 
