@@ -6,7 +6,7 @@ from typing import Callable
 
 # *** PATHS ***
 script_dir=os.path.dirname(__file__)
-data_path = os.path.join(script_dir, '../data/processed/tweets_processed.csv')
+data_path = os.path.join(script_dir, '../data/processed/preproccessed_tweets.csv')
 BoW = os.path.join(script_dir, '../data/raw/sentiment.xlsx')
 # ABBREVIATIONS = 
 # STEMWORDS = 
@@ -34,6 +34,7 @@ def remove_characters(dataframe:pd.DataFrame, column_name:str, characters:list[s
     # Apply the function to the specified column
     dataframe[column_name] = dataframe[column_name].apply(remove_chars)
     return dataframe
+
 
 def normalize(dataframe: pd.DataFrame, column_name: str, new_column_name: str, lower_bound: float=0.0, upper_bound: float=1.0) -> pd.DataFrame:
     """
@@ -102,6 +103,7 @@ def community_score(dataframe: pd.DataFrame, columns: list[str], weights: tuple[
     
     return dataframe
 
+
 def two_column_operation(dataframe: pd.DataFrame, column1_name: str, column2_name: str, new_column_name: str, operation: Callable[[float, float], float]) -> pd.DataFrame:
     """
     Combine two numeric columns using a specified operation or function and create a new column with the result.
@@ -125,6 +127,7 @@ def two_column_operation(dataframe: pd.DataFrame, column1_name: str, column2_nam
     
     return dataframe
 
+
 # *** PANDAS DATAFRAMES ***
 dataset = pd.read_csv(data_path)
 sentiment = pd.read_excel(BoW)
@@ -132,12 +135,15 @@ print(dataset.columns)
 
 # *** DATASET PRE-PROCESSING ***
 characters_to_remove = ['@', '#', '!', '?', '&', '%', '$', '~', '-', '_', "'", '"', "'s"]
-dataset = remove_characters(dataset, 'tweet', characters_to_remove)
+dataset = remove_characters(dataframe=dataset,
+                            column_name='Preprocessed Document',
+                            characters=characters_to_remove)
+print('status: Pre-processing - Done')
 
-# *** SENTIMENT SCORE (S1) ***
+# *** SENTIMENT SCORE (S1) *** 
 total_scores= [] 
 for index, row in dataset.iterrows(): 
-    tweet=row['tweet'] 
+    tweet=row['Preprocessed Document'] 
     # tweet=row['Preprocessed Document'] 
     words=tweet.split() 
     total_score= sum([sentiment_score(word=word,
@@ -147,41 +153,40 @@ for index, row in dataset.iterrows():
     total_scores.append(total_score) 
 
 dataset['Score1'] = total_scores 
+print('status: Generate Score1 - Done')
 
 # Normalizing Score2 between specified  upper and lower bounds
-dataset = normalize(dataframe=dataset, column_name='Score1',
-                    new_column_name='Norm Score1',
-                    lower_bound=-1.0,
-                    upper_bound=1.0)
+# dataset = normalize(dataframe=dataset, column_name='Score1',
+#                     new_column_name='Norm Score1',
+#                     lower_bound=-1.0,
+#                     upper_bound=1.0)
+# print('status: Normalize Score1 - Done')
 
 # *** COMMUNITY SCORE (S2) ***
-# Specify the columns, weights, and the new column name
-columns_to_multiply = ['nlikes', 'nreplies', 'nretweets']
-count_weights = (0.7, 0, 0.3)
-new_column_name = 'Score2'
-
-# Calculate the new score column
 dataset = community_score(dataframe=dataset,
-                          columns=columns_to_multiply,
-                          weights=count_weights,
-                          new_column_name=new_column_name)
+                          columns=['nlikes', 'nreplies', 'nretweets'],
+                          weights=(0.7, 0, 0.3),
+                          new_column_name='Score2')
+print('status: Generate Score2 - Done')
 
 # Normalizing Score2 between specified  upper and lower bounds
-dataset = normalize(dataframe=dataset, column_name='Score2',
-                    new_column_name='Norm Score2',
-                    lower_bound=-1.0,
-                    upper_bound=1.0)
+# dataset = normalize(dataframe=dataset, column_name='Score2',
+#                     new_column_name='Norm Score2',
+#                     lower_bound=-1.0,
+#                     upper_bound=1.0)
+# print('status: Normalize Score2 - Done')
 
 # *** OVERALL SCORE ***
-operation = lambda x, y: x * y  # Operation between the two columns
-dataset= two_column_operation(dataframe=dataset,
-                                   column1_name='Norm Score1',
-                                   column2_name='Norm Score2',
-                                   new_column_name='Overall Score',
-                                   operation=operation)
+# operation = lambda x, y: x * y  # Operation between the two columns
+# dataset= two_column_operation(dataframe=dataset,
+#                                    column1_name='Norm Score1',
+#                                    column2_name='Norm Score2',
+#                                    new_column_name='Overall Score',
+#                                    operation=operation)
 
-print(dataset['Overall Score'])
+# print('status: Overall Score - Done')
 dataset.to_csv(destination_path, index=False)
+print(f'status: Exported .csv file to {destination_path}')
 
 # Output the modified dataframe 
 # knio.output_tables[0] = knio.Table.from_pandas(dataset) 
