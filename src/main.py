@@ -1,13 +1,11 @@
 import os
-import sys
 import pandas as pd
 from typing import Callable
-# import knime.scripting.io as knio
 
 # *** PATHS ***
 script_dir=os.path.dirname(__file__)
-data_path = os.path.join(script_dir, '../data/processed/preproccessed_tweets.csv')
-BoW = os.path.join(script_dir, '../data/raw/sentiment.xlsx')
+data_path = os.path.join(script_dir, '../data/processed/preproccessed.csv')
+BoW = os.path.join(script_dir, '../data/raw/BoW.xlsx')
 # ABBREVIATIONS = 
 # STEMWORDS = 
 destination_path = os.path.join(script_dir, '../data/processed/scored_dataset.csv')
@@ -97,7 +95,7 @@ def community_score(dataframe: pd.DataFrame, columns: list[str], weights: tuple[
     # Ensure the number of columns matches the number of weights
     if len(columns) != len(weights):
         raise ValueError("Number of columns must match the number of weights.")
-    
+    # Wt*T + Wl*L + Wr*R
     # Calculate the new score column based on the equation
     dataframe[new_column_name] = sum(dataframe[col] * weight for col, weight in zip(columns, weights))
     
@@ -131,7 +129,13 @@ def two_column_operation(dataframe: pd.DataFrame, column1_name: str, column2_nam
 # *** PANDAS DATAFRAMES ***
 dataset = pd.read_csv(data_path)
 sentiment = pd.read_excel(BoW)
-print(dataset.columns)
+
+# *** DATA TYPE HANDLING ***
+dataset['date'] = pd.to_datetime(dataset.date)
+print(dataset.dtypes)
+
+# ** CHRONOLOGICAL ORDER ***
+dataset = dataset.sort_values(by=['date'])
 
 # *** DATASET PRE-PROCESSING ***
 characters_to_remove = ['@', '#', '!', '?', '&', '%', '$', '~', '-', '_', "'", '"', "'s"]
@@ -140,11 +144,11 @@ dataset = remove_characters(dataframe=dataset,
                             characters=characters_to_remove)
 print('status: Pre-processing - Done')
 
-# *** SENTIMENT SCORE (S1) *** 
+# *** SENTIMENT POLARIZATION (S1)*** 
 total_scores= [] 
 for index, row in dataset.iterrows(): 
     tweet=row['Preprocessed Document'] 
-    # tweet=row['Preprocessed Document'] 
+    # tweet=row['Preprocessed Document']
     words=tweet.split() 
     total_score= sum([sentiment_score(word=word,
                                       bucket_of_words=sentiment,
@@ -185,8 +189,6 @@ print('status: Generate Score2 - Done')
 #                                    operation=operation)
 
 # print('status: Overall Score - Done')
+# *** EXPORT ***
 dataset.to_csv(destination_path, index=False)
 print(f'status: Exported .csv file to {destination_path}')
-
-# Output the modified dataframe 
-# knio.output_tables[0] = knio.Table.from_pandas(dataset) 
